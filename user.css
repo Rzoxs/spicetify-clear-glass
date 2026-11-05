@@ -1,0 +1,327 @@
+/* ==========================================================================
+   Clear Glass — inspiré du matériau « Liquid Glass (clair) » d'Apple
+   Réglages rapides : la section :root ci-dessous.
+
+   Performances — à conserver en cas de modification :
+   - backdrop-filter uniquement là où du contenu passe réellement dessous
+     (capsule du lecteur, menus). Les panneaux n'ont derrière eux que le fond,
+     déjà flou : une simple teinte donne le même rendu pour un coût nul.
+   - pas de :has(), de sélecteur universel (body *) ni de [style*="…"] :
+     ils sont réévalués à chaque changement du DOM, donc à chaque défilement.
+   - le fond est flouté une seule fois dans un <canvas> (voir theme.js).
+   ========================================================================== */
+:root {
+  --cg-tint: rgba(14, 14, 20, 0.24);          /* teinte des panneaux : baisser pour plus de transparence */
+  --cg-tint-strong: rgba(255, 255, 255, 0.09);
+  --cg-radius: 26px;
+  --cg-specular:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 1px 0 0 rgba(255, 255, 255, 0.07),
+    inset -1px 0 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  --cg-font: -apple-system, "SF Pro Display", "SF Pro Text", "Segoe UI Variable Display",
+    "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+/* Spotify redéfinit ses polices sur .spotify-mix-non-latin */
+:root,
+.spotify-mix-non-latin {
+  --encore-body-font-stack: var(--cg-font) !important;
+  --encore-title-font-stack: var(--cg-font) !important;
+  --encore-variable-font-stack: var(--cg-font) !important;
+  --encore-text-font-family: var(--cg-font) !important;
+  --fallback-fonts: var(--cg-font) !important;
+}
+
+/* --- Jetons Spotify : tout devient transparent, le verre fait le reste --- */
+.encore-dark-theme,
+.encore-dark-theme .encore-base-set,
+.encore-dark-theme .encore-app-frame-set {
+  --background-base: transparent !important;
+  --background-highlight: var(--cg-tint-strong) !important;
+  --background-press: rgba(255, 255, 255, 0.05) !important;
+  --background-elevated-base: rgba(44, 44, 54, 0.62) !important;
+  --background-elevated-highlight: rgba(255, 255, 255, 0.12) !important;
+  --background-elevated-press: rgba(255, 255, 255, 0.06) !important;
+  --background-tinted-base: rgba(255, 255, 255, 0.1) !important;
+  --background-tinted-highlight: rgba(255, 255, 255, 0.16) !important;
+  --background-tinted-press: rgba(255, 255, 255, 0.07) !important;
+  --text-base: #fff !important;
+  --text-subdued: rgba(255, 255, 255, 0.72) !important;
+  --text-bright-accent: #fff !important;
+  --text-positive: #fff !important;
+  --essential-subdued: rgba(255, 255, 255, 0.42) !important;
+  --essential-bright-accent: #fff !important;
+  --essential-positive: #fff !important;
+  --decorative-subdued: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* --- Fond ambiant --- */
+html { background: #0d0d13 !important; }
+body { background: transparent !important; } /* sinon le body masque #cg-bg (z-index négatif) */
+
+#cg-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: radial-gradient(circle at 25% 15%, #3b4a6b, #15151d 65%);
+}
+.cg-bg-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.1s ease;
+}
+.cg-bg-layer.cg-on { opacity: 1; }
+
+#main, .Root, .Root__top-container,
+.Root__top-container > div:not(#main-view),
+#Desktop_LeftSidebar_Id,
+#global-nav-bar {
+  background: transparent !important;
+}
+
+/* --- Matériau verre : panneaux --- */
+#main-view,
+#Desktop_LeftSidebar_Id nav > div,
+#Desktop_PanelContainer_Id {
+  background: var(--cg-tint) !important;
+  border: 0 !important;
+  border-radius: var(--cg-radius) !important;
+  box-shadow: var(--cg-specular) !important;
+}
+.YourLibraryX { background: transparent !important; }
+
+/* --- Lecteur : capsule flottante, le contenu défile sous le verre ---
+   Ordre des enfants de .Root__top-container : barre latérale, lecteur,
+   #main-view, panneau de droite, puis vue plein écran si elle est ouverte. */
+#main-view,
+#Desktop_LeftSidebar_Id,
+#main-view + div {
+  grid-row-end: now-playing-bar-end !important;
+  margin-bottom: 8px;
+}
+#Desktop_LeftSidebar_Id + div {
+  position: relative;
+  z-index: 5;
+  pointer-events: none;
+}
+.main-nowPlayingBar-container {
+  pointer-events: auto;
+  margin: 0 16px 16px;
+  border: 0 !important;
+  border-radius: 30px !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(170%) brightness(0.72);
+  backdrop-filter: blur(14px) saturate(170%) brightness(0.72);
+  box-shadow: var(--cg-specular), 0 12px 32px rgba(0, 0, 0, 0.4) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+.main-nowPlayingBar-nowPlayingBar { background: transparent !important; }
+.main-view-container__scroll-node-child { padding-bottom: 96px; }
+#Desktop_LeftSidebar_Id nav > div,
+#Desktop_PanelContainer_Id { padding-bottom: 88px; }
+
+/* Barre « Lecture en cours sur… » (autre appareil) : fondue dans la capsule */
+.main-nowPlayingBar-container > .encore-bright-accent-set {
+  --background-base: transparent !important;
+  --text-base: #fff !important;
+  --essential-base: #fff !important;
+  background: transparent !important;
+  color: #fff !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0 0 30px 30px !important;
+}
+.main-nowPlayingBar-container > .encore-bright-accent-set button { color: #fff !important; }
+
+/* Pochette : arrondi concentrique avec la capsule (30px - 8px de marge),
+   sinon ses angles carrés dépassent de la courbe */
+.main-nowPlayingBar-left img,
+[data-testid="now-playing-widget-v2"] > div:first-child,
+[data-testid="now-playing-widget-v2"] > div:first-child > * {
+  border-radius: 22px !important;
+}
+
+/* --- Plein écran et vue développée --- */
+/* .cg-cinema-root et .cg-cinema-on sont posées par theme.js */
+.cg-cinema-root {
+  --cinema-mode-bg-color-from: transparent !important;
+  --cinema-mode-bg-color-to: transparent !important;
+  --background-base: transparent !important;
+}
+.cg-cinema-root > div { background: transparent !important; }
+/* Sans l'aplat, l'interface de dessous se verrait : on la masque */
+.cg-cinema-on > #Desktop_LeftSidebar_Id,
+.cg-cinema-on > #main-view,
+.cg-cinema-on > #main-view + div,
+.cg-fullscreen #global-nav-bar {
+  visibility: hidden !important;
+}
+/* La vue plein écran suit le panneau de droite. Le contenu descend jusqu'en
+   bas et défile sous la capsule. */
+.cg-cinema-on > #main-view + div + div {
+  grid-row-end: now-playing-bar-end !important;
+  margin-bottom: 8px;
+  z-index: 4 !important; /* sous la capsule (z-index 5) */
+}
+/* Spotify entoure cette vue d'un contour noir */
+.cg-cinema-on > #main-view + div + div,
+.cg-cinema-on > #main-view + div + div > div {
+  outline: none !important;
+  border-radius: var(--cg-radius) !important;
+}
+.cg-cinema-on > #main-view + div + div > div > div { padding-bottom: 96px; }
+
+/* --- Police système ---
+   Les polices Spotify sont redirigées vers Segoe UI : aucun sélecteur à évaluer,
+   donc aucun coût au défilement (contrairement à une règle « body * »). */
+@font-face { font-family: "SpotifyMixUI"; font-weight: 400; src: local("Segoe UI"); }
+@font-face { font-family: "SpotifyMixUI"; font-weight: 500; src: local("Segoe UI Semibold"); }
+@font-face { font-family: "SpotifyMixUI"; font-weight: 700; src: local("Segoe UI Semibold"); }
+@font-face { font-family: "SpotifyMixUI"; font-weight: 900; src: local("Segoe UI Bold"); }
+@font-face { font-family: "SpotifyMixUITitle"; font-weight: 400; src: local("Segoe UI Semibold"); }
+@font-face { font-family: "SpotifyMixUITitle"; font-weight: 700; src: local("Segoe UI Bold"); }
+@font-face { font-family: "SpotifyMixUITitle"; font-weight: 900; src: local("Segoe UI Black"); }
+@font-face { font-family: "SpotifyMixUITitleVariable"; font-weight: 100 900; src: local("Segoe UI Bold"); }
+body { font-family: var(--cg-font) !important; }
+button, input, textarea, select { font-family: inherit; }
+
+/* --- Pages : retire les aplats colorés, le verre reste visible --- */
+main > div > div,
+main > div > div > div,
+[data-testid="entity-header"] > div,
+[data-testid$="-page"] > div,
+[data-testid="artist-page"] > div > div > div {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* --- Lisibilité : ombre sans flou, bien moins coûteuse à dessiner --- */
+#main-view, #Desktop_LeftSidebar_Id, #Desktop_PanelContainer_Id, #global-nav-bar {
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.28);
+}
+
+/* --- Aperçu des paroles --- */
+[data-testid="lyrics-npv-section"] {
+  background: rgba(20, 20, 28, 0.42) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--cg-specular);
+}
+
+/* --- Paroles (page et aperçu) : texte blanc sur le verre --- */
+main > div,
+[data-testid="lyrics-npv-section"] {
+  --lyrics-color-background: transparent !important;
+  --lyrics-color-active: #fff !important;
+  --lyrics-color-inactive: rgba(255, 255, 255, 0.5) !important;
+  --lyrics-color-passed: rgba(255, 255, 255, 0.72) !important;
+}
+.main-nowPlayingBar-container button[data-active="true"],
+.main-nowPlayingBar-container button[aria-pressed="true"] { color: #fff !important; }
+
+/* --- Accent : blanc façon Apple au lieu du vert Spotify --- */
+.encore-dark-theme .encore-bright-accent-set {
+  --background-base: #fff !important;
+  --background-highlight: #f2f2f7 !important;
+  --background-press: #d8d8de !important;
+  --text-base: #000 !important;
+  --essential-base: #000 !important;
+}
+
+/* --- Tuiles de l'accueil --- */
+.view-homeShortcutsGrid-shortcut {
+  border-radius: 14px !important;
+  overflow: hidden;
+  box-shadow: var(--cg-specular);
+}
+
+/* --- Barres collantes : la liste défile dessous, il faut du vrai verre pour rester lisible.
+   Zones petites : le flou y coûte peu, contrairement aux grands panneaux. */
+.main-topBar-background,
+[role="grid"] > [role="presentation"]:first-child,
+.WLAk85ZDVJOveF8S8x2S { /* filtres de la page de recherche */
+  background: rgba(20, 20, 28, 0.62) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+}
+.main-topBar-background {
+  border-radius: var(--cg-radius) var(--cg-radius) 0 0;
+}
+
+/* --- Suggestions de la recherche --- */
+#search-dropdown > div {
+  background: rgba(30, 30, 38, 0.82) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 18px !important;
+  box-shadow: var(--cg-specular), 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* --- Notifications : verre sombre au lieu du bloc blanc --- */
+.notistack-Snackbar [role="alert"] > div {
+  --text-base: #fff !important;
+  --text-subdued: rgba(255, 255, 255, 0.72) !important;
+  --essential-base: #fff !important;
+  background: rgba(30, 30, 38, 0.82) !important;
+  color: #fff !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 16px !important;
+  box-shadow: var(--cg-specular), 0 12px 32px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* --- Boutons Windows (réduire, agrandir, fermer) ---
+   Spotify les dessine hors de la page, sur une bande noire à 53 % impossible à retirer en CSS.
+   On éclaircit ce qui se trouve dessous d'autant (1 / 0,47) : la bande s'annule et les boutons
+   flottent sur le fond. Le dernier enfant est la zone réservée par Spotify à ces boutons. */
+.main-globalNav-contentRight > :last-child {
+  position: relative;
+}
+.main-globalNav-contentRight > :last-child::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: -1.1px; /* évite un trait sombre d'un pixel sur le bord gauche de la bande */
+  right: 0;
+  height: 64px;
+  -webkit-backdrop-filter: brightness(2.13);
+  backdrop-filter: brightness(2.13);
+  pointer-events: none;
+}
+
+/* --- Barre du haut --- */
+#global-nav-bar form > div,
+#global-nav-bar button[class*="encore"],
+#global-nav-bar a[class*="encore"] {
+  border-radius: 999px !important;
+}
+
+/* --- Cartes --- */
+.main-card-card {
+  background: transparent !important;
+  border-radius: 20px !important;
+  transition: background 0.2s ease;
+}
+.main-card-card:hover {
+  background: var(--cg-tint-strong) !important;
+  box-shadow: var(--cg-specular) !important;
+}
+
+/* --- Menus, popovers --- */
+#context-menu,
+[role="menu"] {
+  background: var(--background-elevated-base) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 18px !important;
+  box-shadow: var(--cg-specular), 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* --- Barres de défilement --- */
+.os-scrollbar-handle {
+  background: rgba(255, 255, 255, 0.28) !important;
+  border-radius: 99px !important;
+}
