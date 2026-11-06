@@ -310,14 +310,28 @@ main > div,
   box-shadow: var(--cg-specular) !important;
 }
 
-/* --- Menus, popovers --- */
-#context-menu,
+/* --- Menus, popovers ---
+   Le flou est posé sur un pseudo-élément, pas sur le menu : un backdrop-filter sur le menu
+   en ferait le conteneur de ses sous-menus, qui s'ouvriraient alors coupés, à l'intérieur
+   d'une barre de défilement. */
+#context-menu {
+  background: transparent !important;
+}
 [role="menu"] {
-  background: var(--background-elevated-base) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
+  background: transparent !important;
   border-radius: 18px !important;
   box-shadow: var(--cg-specular), 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+}
+[role="menu"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 18px;
+  background: var(--background-elevated-base);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  pointer-events: none;
 }
 
 /* --- Barres de défilement --- */
